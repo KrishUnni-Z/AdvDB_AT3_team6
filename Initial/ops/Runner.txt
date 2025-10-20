@@ -1,0 +1,41 @@
+docker-compose down -v
+
+
+docker-compose up -d zookeeper
+
+
+docker-compose up -d kafka
+
+pip install kafka-python snowflake-connector-python confluent-kafka lz4
+
+docker-compose exec kafka kafka-topics --create --bootstrap-server localhost:9092 --topic behav.stream_session --partitions 1 --replication-factor 1
+docker-compose exec kafka kafka-topics --create --bootstrap-server localhost:9092 --topic behav.engagement --partitions 1 --replication-factor 1
+docker-compose exec kafka kafka-topics --create --bootstrap-server localhost:9092 --topic behav.search --partitions 1 --replication-factor 1
+docker-compose exec kafka kafka-topics --create --bootstrap-server localhost:9092 --topic behav.browse --partitions 1 --replication-factor 1
+docker-compose exec kafka kafka-topics --create --bootstrap-server localhost:9092 --topic behav.tile_impression --partitions 1 --replication-factor 1
+docker-compose exec kafka kafka-topics --create --bootstrap-server localhost:9092 --topic behav.commerce --partitions 1 --replication-factor 1
+docker-compose exec kafka kafka-topics --create --bootstrap-server localhost:9092 --topic behav.notification --partitions 1 --replication-factor 1
+
+docker-compose exec kafka kafka-topics --bootstrap-server localhost:9092 --list
+
+python Phase0/generator/generate_events_hybrid_cli.py --outdir data --hours 168 --sessions-per-hour 900
+
+=== Summary ===
+  stream session: 151368
+      engagement: 290338
+          search: 90572
+          browse: 302719
+ tile_impression: 1210415
+        commerce: 18096
+    notification: 37957
+Output root: C:\AdvDB\data
+
+2.1 Mil
+
+
+python Phase0/publisher/publish_to_kafkafrom_folders.py --root data --brokers localhost:9092
+
+.\count_topics.bat(inside ops)
+
+
+python Phase0/connector/kafka_to_snowflake.py
